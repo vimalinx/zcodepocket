@@ -32,11 +32,29 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+.env.*
+!.env.example
+
+# Build artifacts and private runtime state are never source releases.
+/builds/
+*.apk
+*.aab
+*.keystore
+*.log
+*.db
+*.db-*
+*.sqlite*
+/.runtime/
+*.backup
 
 # typescript
 *.tsbuildinfo
 
 example
+
+# agent scratch
+/.video_agent/
 
 # generated native folders
 /ios

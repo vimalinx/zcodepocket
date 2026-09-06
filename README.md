@@ -1,56 +1,74 @@
-# Welcome to your Expo app 👋
+# ZCode Pocket
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+ZCode 的第三方 React Native 手机客户端。扫描电脑 ZCode 的官方 `remote/v4` 二维码，经官方公网中转连接桌面端，使用本项目自己的原生界面。
 
-## Get started
+本项目不是 ZCode 官方产品，也不分发 ZCode 桌面程序、官方网页包或引擎。需要用户自行安装并运行官方 ZCode，且打开允许远程访问的工作区。
 
-1. Install dependencies
+## 当前状态
 
-   ```bash
-   npm install
-   ```
+开发中。官方认证、二进制 RPC、分片校验和原生页面适配已有自动测试；Android 可构建并安装。已在 Android 实机通过官方公网中转读取会话列表和账户用量；移动数据网络下的真实会话收发及最新手势修复仍待验收，暂不视为正式发布版本。iOS 尚未实机验证。
 
-2. Start the app
+当前仓库根目录就是手机工程，不再嵌套 `mobile/`。旧自建网关、PWA 和本地历史构建已移出仓库归档，不参与构建和发布。
 
-   ```bash
-   npx expo start
-   ```
+## 导航约定
 
-In the output, you'll find options to open the app in a
+- 页面层级为列表 → 会话 → 会话设置；右滑和返回键逐级返回，设置不能直接退到列表。
+- 最新列表向左滑回到刚才的会话，点击条目进入所选会话；会话在标题区右滑回列表、左滑进设置，会话设置在标题区右滑回会话。正文、输入框和附件区不捕获导航横滑。
+- 会话和设置保留在同一连续轨道上，快速反向滑动可中断并接续动画。
+- 已配对时登录页和登录扫码页不在导航历史中。断网、重连失败不会解除登录；只有主动解除配对后才能回到登录页。
+- 点击和滑动共用入场/返回状态；真实聊天页在动画中开始加载，列表视口和内容完成布局后才交接标题。返回列表也等待目标页的原生布局确认，不用固定延时切换。布局、排序、滚动或尺寸变化会废弃旧行坐标，改用整页滑动。
+- 离开聊天/设置会取消本地等待并阻止后续加载请求；已发出的远程操作不能撤销或自动重试。一次打开只读取一份会话数据，同时用于消息和模型设置。加载失败独立提示并可手动重试，不写入聊天记录。
+- 仅提供构建、规划、编辑、全自动模式；不提供 `auto`，也不在打开会话时改写模式。电脑返回未知模式时不冒充全自动，需用户手动选择。
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 连接方式
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+手机原生界面 → `wss://zcode.z.ai/ws` → 电脑 ZCode 已有远程服务。
 
-## Get a fresh project
+- 不需要本项目的电脑端服务、局域网扫描或第二个引擎实例。
+- 不使用 WebView 承载会话，也不在后台隐藏运行官方网页。
+- `src/lib/remote/` 实现官方远程连接；`remote/client.ts` 将页面操作转换为官方 channel RPC。
+- 少数 `gw.*` 名称是迁移期间的手机内部选择器，不会发往网络，后续可单独整理命名。
+- 仅访问电脑已共享的工作区。新会话默认 `yolo`，意味着较少的执行确认；请只连接可信电脑和工作区。
+- 发送等有副作用请求出现超时，不自动重放。先检查真实会话结果再决定是否重新操作。
 
-When you're ready, run:
+## 配对与隐私
 
-```bash
-npm run reset-project
+二维码和完整配对链接都是凭据，不要发布截图、提交链接或粘贴到公开日志中。凭据使用 Expo SecureStore 保存，不放在全局界面状态或普通偏好存储中；配对输入框只在输入时临时持有链接。旧版本升级会迁移已有官方链接，并移除旧局域网地址和令牌。
+
+链路使用官方 WSS。不要将其描述为本项目提供端到端加密；连接与会话数据经过 ZCode 官方服务。取消配对清除本机保存的配对信息，但不代表吊销其他设备上的凭据或删除电脑历史记录。
+
+## 手机背景
+
+外观设置可导入本机图片；APNG 按内容识别，即使文件后缀为 JPG，也会提取 PNG 默认画面作为静态背景。PNG / APNG 预处理限制为 32 MB，最终背景最长边 2048 像素。原照片不会修改。
+
+Android 支持整图倾斜视差，默认开启，可关闭或调整强度。进入页面时以当前握姿校准，只移动背景、不移动聊天文字。页面失焦、应用退到后台、系统开启减少动态效果时停止传感器订阅；无可用传感器时保持静态。这不是人物分层或深度图渲染，也不生成真实三维内容。
+
+## 应用更新
+
+应用从公开仓库 `vimalinx/zcodepocket` 的 GitHub Releases 检查最新正式版，不需要登录或 Token。启动/回前台每 6 小时最多自动检查一次（失败也限频），可在设置的「应用更新」关闭自动检查或手动重试。下载须确认，交由系统浏览器下载 APK，再由 Android 安装器完成安装；不是静默更新，也不会自动重启会话。仅支持 Android arm64 APK。
+
+发布约定：正式 tag 为 `v主.次.修订`，附件唯一命名为 `zcodepocket-主.次.修订-构建号-arm64-v8a.apk`，例如 `zcodepocket-1.0.2-32-arm64-v8a.apk`。`app.json` 的 `expo.version`、`android.versionCode` 必须与附件一致，`package.json` 同步版本；每次更新递增构建号，预构建后再打包。草稿、预发布、缺失/歧义附件、异常下载来源都不视为可安装更新。必须沿用已安装版本的签名与包名；签名不一致时不要通过卸载旧版来绕过，卸载会丢失本地数据。此功能不会创建或发布 GitHub Release。
+
+## 构建
+
+需要 Node.js 22.13+、Bun、JDK 17、Android SDK 36。依赖版本以 `package.json` 和 `bun.lock` 为准。请阅读 [Expo SDK 57 文档](https://docs.expo.dev/versions/v57.0.0/)。
+
+```sh
+bun install --frozen-lockfile
+npm test
+npx tsc --noEmit
+npx expo lint
+npx expo prebuild --platform android --no-install
+cd android
+./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+预构建会生成 Android 工程；不要在生成目录保留唯一一份手工修改。请通过配置或 Expo 插件管理原生变更。
 
-### Other setup steps
+APK 位于 `android/app/build/outputs/apk/release/app-release.apk`。默认生成工程使用调试签名，即使构建名称为 Release，也不适合直接作为正式公开发行签名。公开发布前需要配置自己的发布密钥，密钥不得提交。
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+源码发布范围仅此目录；不要包含 `builds/`、生成工程、运行日志、数据库、二维码、密钥或任何官方程序包。协议可能随官方升级变化，连接失败应明确报错，不能退回另建网关或引擎。
 
-## Learn more
+## 许可证
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+见 `LICENSE`，保留 Expo 模板版权声明。第三方依赖及官方 ZCode 产品分别遵循各自许可证和条款。
