@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text as RNText, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Clipboard from 'expo-clipboard';
 import Markdown, { MarkdownIt, type RenderRules } from 'react-native-markdown-display';
 import { radius, spacing, type ThemeColors, useTheme, useThemeStyles } from '@/lib/theme';

@@ -1,22 +1,26 @@
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { invalidateSessionLayout, useSessionListHandoff } from '@/components/session/session-entry';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { SessionRow } from '@/components/session/session-row';
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import { radius, spacing, type ThemeColors, useTheme, useThemeStyles } from '@/lib/theme';
 import { baseName } from '@/lib/util';
+import { createSessionInWorkspace } from '@/lib/create-session';
+import { replaceWithSession, type RootSessionNavigation } from '@/lib/session-routes';
 import { useApp, type SessionInfo } from '@/store/app';
 
 export default function SessionsScreen() {
   const handoff = useSessionListHandoff('/sessions');
   const { width, height } = useWindowDimensions();
+  const navigation = useNavigation<RootSessionNavigation>('/');
   const { colors, isDark } = useTheme();
   const styles = useThemeStyles(createStyles);
   const sessions = useApp((s) => s.sessions);
   const workspaces = useApp((s) => s.workspaces);
+  const providers = useApp((s) => s.providers);
   const running = useApp((s) => s.running);
   const pendingInteractions = useApp((s) => s.pendingInteractions);
   const pinnedSessionIds = useApp((s) => s.pinnedSessionIds);
@@ -25,6 +29,32 @@ export default function SessionsScreen() {
   const refresh = useApp((s) => s.refresh);
   const [query, setQuery] = useState('');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [creatingIn, setCreatingIn] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<{ workspacePath: string; message: string } | null>(null);
+  const creationLock = useRef(false);
+  const focusGeneration = useRef(0);
+  useFocusEffect(useCallback(() => {
+    focusGeneration.current++;
+    return () => { focusGeneration.current++; };
+  }, []));
+  const createInWorkspace = useCallback(async (workspacePath: string) => {
+    if (creationLock.current) return;
+    creationLock.current = true;
+    const generation = focusGeneration.current;
+    setCreatingIn(workspacePath);
+    setCreateError(null);
+    try {
+      const target = await createSessionInWorkspace(workspacePath, providers);
+      void refresh().catch(() => {});
+      // A late result must not pull the user out of another tab/page.
+      if (generation === focusGeneration.current) replaceWithSession(navigation, { ...target, returnTo: 'sessions' });
+    } catch (error) {
+      setCreateError({ workspacePath, message: error instanceof Error ? error.message : String(error) });
+    } finally {
+      creationLock.current = false;
+      setCreatingIn(null);
+    }
+  }, [navigation, providers, refresh]);
   const pinned = useMemo(() => new Set(pinnedSessionIds), [pinnedSessionIds]);
 
   const groups = useMemo(() => {
@@ -54,7 +84,7 @@ export default function SessionsScreen() {
     <View {...handoff} collapsable={false} style={styles.screen}>
       <View style={styles.header}>
         <View><Text variant="primary" style={styles.headerTitle}>会话</Text><Text variant="muted" style={styles.headerSubtitle}>{workspaces.length} 个工作区 · {sessions.length} 个会话</Text></View>
-        <Pressable accessibilityRole="button" accessibilityLabel="新建会话" onPress={() => router.push({ pathname: '/new-session', params: { returnTo: 'sessions' } })} style={({ pressed }) => [styles.newBtn, pressed && styles.pressed]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="新建会话" disabled={!!creatingIn} onPress={() => { if (!creationLock.current) router.push({ pathname: '/new-session', params: { returnTo: 'sessions' } }); }} style={({ pressed }) => [styles.newBtn, !!creatingIn && styles.pressed, pressed && styles.pressed]}>
           <Ionicons name="add" color={colors.primaryForeground} size={20} /><Text style={styles.newBtnText}>新会话</Text>
         </Pressable>
       </View>
@@ -76,7 +106,8 @@ export default function SessionsScreen() {
             {!isCollapsed ? <View style={styles.groupBody}>
               {group.sessions.map((session) => <SessionRow key={session.sessionId} source="/sessions" item={session} running={!!running[session.sessionId]} pending={pendingInteractions.some((item) => item.params.sessionId === session.sessionId)} pinned={pinned.has(session.sessionId)} onPress={openSession} onTogglePin={(item) => void togglePinnedSession(item.sessionId)} />)}
               {group.sessions.length === 0 ? <Text variant="muted" style={styles.noSessions}>这个工作区还没有会话</Text> : null}
-              <Pressable accessibilityLabel={`在 ${group.title} 新建会话`} onPress={() => router.push({ pathname: '/new-session', params: { workspace: group.path, returnTo: 'sessions' } })} style={({ pressed }) => [styles.groupNew, pressed && styles.pressed]}><Ionicons name="add-circle-outline" color={colors.mutedForeground} size={18} /><Text variant="muted" style={styles.groupNewText}>在此工作区新建会话</Text></Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel={`在 ${group.title} 新建会话`} accessibilityState={{ busy: creatingIn === group.path, disabled: !!creatingIn }} disabled={!!creatingIn} onPress={() => void createInWorkspace(group.path)} style={({ pressed }) => [styles.groupNew, !!creatingIn && styles.pressed, pressed && styles.pressed]}><Ionicons name="add-circle-outline" color={colors.mutedForeground} size={18} /><Text variant="muted" style={styles.groupNewText}>{creatingIn === group.path ? '创建中…' : '在此工作区新建会话'}</Text></Pressable>
+              {createError?.workspacePath === group.path ? <Text variant="destructive" accessibilityLiveRegion="polite" style={styles.createError}>{createError.message}</Text> : null}
             </View> : null}
           </View>;
         })}
@@ -100,4 +131,5 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   count: { minWidth: 24, height: 24, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 }, countText: { fontSize: 11, fontWeight: '600' },
   groupBody: { paddingLeft: 36 }, noSessions: { fontSize: 13, paddingVertical: spacing.md, textAlign: 'center' },
   groupNew: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: spacing.xs }, groupNewText: { fontSize: 13 }, empty: { textAlign: 'center', lineHeight: 21, marginTop: 80 }, workspaceHint: { fontSize: 11, lineHeight: 17, textAlign: 'center', marginTop: spacing.sm },
+  createError: { fontSize: 12, lineHeight: 18, paddingBottom: spacing.sm },
 });

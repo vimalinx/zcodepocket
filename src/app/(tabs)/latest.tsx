@@ -2,7 +2,7 @@ import { useCallback, useLayoutEffect, useMemo } from 'react';
 import { Animated, FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSessionNavigation, useSessionSwipe } from '@/lib/session-navigation';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { SessionRow } from '@/components/session/session-row';
 import { beginReopenSessionEntry, invalidateSessionLayout, moveSessionEntry, releaseReopenSessionEntry, useSessionListHandoff } from '@/components/session/session-entry';
 import { Text } from '@/components/ui/text';

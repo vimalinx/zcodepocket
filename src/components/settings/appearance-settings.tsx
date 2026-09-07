@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Switch, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as DocumentPicker from 'expo-document-picker';
 import { changeBackgroundImage } from '@/lib/chat-background-files';
 import { Button } from '@/components/ui/button';

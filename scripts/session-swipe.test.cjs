@@ -58,7 +58,7 @@ function harness({ custom = false, throws = false, native = false, drag, fromLat
       'expo-router': { router: { push: (href) => { navigation++; pushes.push(href); } } },
       '@/lib/session-navigation': { useSessionNavigation: (select) => select({ current: available ? { id: 'last', title: 'Last chat' } : null }),
         useSessionSwipe: (...args) => (nav = exports.useSessionSwipe(...args)) },
-      '@expo/vector-icons': { Ionicons: 'Ionicons' }, '@/components/session/session-row': { SessionRow: 'SessionRow' },
+      '@expo/vector-icons/Ionicons': { default: 'Ionicons', __esModule: true }, '@/components/session/session-row': { SessionRow: 'SessionRow' },
       '@/components/ui/text': { Text: 'Text' },
       '@/lib/theme': { radius: {}, spacing: {}, useTheme: () => ({ colors: {} }) },
       '@/store/app': { useApp: (select) => select(state) },

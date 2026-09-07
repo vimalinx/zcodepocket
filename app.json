@@ -2,7 +2,7 @@
   "expo": {
     "name": "ZCode Pocket",
     "slug": "zcpocket",
-    "version": "1.0.6",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "zcpocket",
@@ -12,7 +12,7 @@
       "bundleIdentifier": "com.vimalinx.zcpocket"
     },
     "android": {
-      "versionCode": 36,
+      "versionCode": 38,
       "package": "com.vimalinx.zcpocket",
       "adaptiveIcon": {
         "backgroundColor": "#09090b",

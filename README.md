@@ -8,13 +8,24 @@ ZCode 的第三方 React Native 手机客户端。扫描电脑 ZCode 的官方 `
 
 开发中。官方认证、二进制 RPC、分片校验和原生页面适配已有自动测试；Android 可构建并安装。已在 Android 实机通过官方公网中转读取会话列表和账户用量；移动数据网络下的真实会话收发及最新手势修复仍待验收，暂不视为正式发布版本。iOS 尚未实机验证。
 
+源码已公开，正式发行准备见 [发布流程](RELEASING.md) 和 [候选检查及未关闭项](docs/release-readiness.md)。已有公开 APK 使用开发调试签名；本地可覆盖测试，但不代表正式签名、安全审计或稳定性验收已经完成。
+
 当前仓库根目录就是手机工程，不再嵌套 `mobile/`。旧自建网关、PWA 和本地历史构建已移出仓库归档，不参与构建和发布。
+
+## 社区与交流
+
+[![LINUX DO 社区](https://img.shields.io/badge/Community-LINUX%20DO-22c55e?style=flat-square)](https://linux.do/)
+
+欢迎 [LINUX DO](https://linux.do/) 的佬友交流使用体验和改进想法。可复现的问题请提交到 [GitHub Issues](https://github.com/vimalinx/zcodepocket/issues)，分享截图或日志前记得移除二维码、配对链接和私人内容。
+
+本项目由开发者独立维护，并非 LINUX DO 社区或 ZCode 官方项目。
 
 ## 导航约定
 
 - 页面层级为列表 → 会话 → 会话设置；右滑和返回键逐级返回，设置不能直接退到列表。
 - 最新列表向左滑回到刚才的会话，点击条目进入所选会话；会话在标题区右滑回列表、左滑进设置，会话设置在标题区右滑回会话。正文、输入框和附件区不捕获导航横滑。
 - 会话和设置保留在同一连续轨道上，快速反向滑动可中断并接续动画。
+- 工作区分组下的“在此工作区新建会话”直接创建并打开该工作区的会话，不再进入选择页；顶部新建入口仍可选择工作区。创建期间防连点，失败不自动重试；离开页面后到达的结果不会强行切换当前页面。
 - 已配对时登录页和登录扫码页不在导航历史中。断网、重连失败不会解除登录；只有主动解除配对后才能回到登录页。
 - 点击和滑动共用入场/返回状态；真实聊天页在动画中开始加载，列表视口和内容完成布局后才交接标题。返回列表也等待目标页的原生布局确认，不用固定延时切换。布局、排序、滚动或尺寸变化会废弃旧行坐标，改用整页滑动。
 - 离开聊天/设置会取消本地等待并阻止后续加载请求；已发出的远程操作不能撤销或自动重试。一次打开只读取一份会话数据，同时用于消息和模型设置。加载失败独立提示并可手动重试，不写入聊天记录。
@@ -51,7 +62,9 @@ Android 支持整图倾斜视差，默认开启，可关闭或调整强度。进
 
 ## 构建
 
-需要 Node.js 22.13+、Bun、JDK 17、Android SDK 36。依赖版本以 `package.json` 和 `bun.lock` 为准。请阅读 [Expo SDK 57 文档](https://docs.expo.dev/versions/v57.0.0/)。
+需要 Node.js 22.13+、Bun 1.3.14、JDK 17、Android SDK 36。依赖版本以 `package.json` 和 `bun.lock` 为准。请阅读 [Expo SDK 57 文档](https://docs.expo.dev/versions/v57.0.0/)。
+
+必须用 Bun 安装依赖，以应用 `patchedDependencies` 中的兼容与安全补丁；不支持 `npm install` / `yarn install`。下面的 `npm test` / `npm run` 仅运行脚本，不安装依赖。补丁范围和升级要求见 [依赖维护说明](docs/dependency-maintenance.md)。
 
 ```sh
 bun install --frozen-lockfile
@@ -65,10 +78,12 @@ cd android
 
 预构建会生成 Android 工程；不要在生成目录保留唯一一份手工修改。请通过配置或 Expo 插件管理原生变更。
 
+在 Git checkout 中准备提交时，另运行 `npm run check:release-source` 检查候选文件范围；不含 `.git` 的源码压缩包不需要执行这一项。
+
 APK 位于 `android/app/build/outputs/apk/release/app-release.apk`。默认生成工程使用调试签名，即使构建名称为 Release，也不适合直接作为正式公开发行签名。公开发布前需要配置自己的发布密钥，密钥不得提交。
 
 源码发布范围仅此目录；不要包含 `builds/`、生成工程、运行日志、数据库、二维码、密钥或任何官方程序包。协议可能随官方升级变化，连接失败应明确报错，不能退回另建网关或引擎。
 
 ## 许可证
 
-见 `LICENSE`，保留 Expo 模板版权声明。第三方依赖及官方 ZCode 产品分别遵循各自许可证和条款。
+见 [LICENSE](LICENSE)，保留 Expo 模板版权声明。第三方依赖及官方 ZCode 产品分别遵循各自许可证和条款，详见 [第三方声明](THIRD_PARTY.md)。参与开发请读 [贡献指南](CONTRIBUTING.md)，报告敏感问题请读 [安全与隐私](SECURITY.md)。

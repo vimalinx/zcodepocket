@@ -1,7 +1,21 @@
 {
-  "name": "mobile",
+  "name": "zcodepocket",
+  "description": "Independent native mobile client for the ZCode official remote connection",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vimalinx/zcodepocket.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vimalinx/zcodepocket/issues"
+  },
+  "homepage": "https://github.com/vimalinx/zcodepocket#readme",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "packageManager": "bun@1.3.14",
   "main": "expo-router/entry",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "dependencies": {
     "@expo/ui": "~57.0.16",
     "@expo/vector-icons": "^15.0.2",
@@ -53,6 +67,9 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "preinstall": "node scripts/require-bun.cjs",
+    "check:release-source": "node scripts/check-release-source.cjs",
+    "verify:release-apk": "node scripts/verify-release-apk.cjs",
     "test": "node --test scripts/*.test.cjs scripts/stream-regression.cjs",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -62,7 +79,13 @@
     "lint": "expo lint"
   },
   "overrides": {
-    "markdown-it": "14.3.1"
+    "markdown-it": "14.3.1",
+    "decode-uri-component": "0.5.0",
+    "uuid": "11.1.1"
   },
-  "private": true
+  "private": true,
+  "patchedDependencies": {
+    "query-string@7.1.3": "patches/query-string@7.1.3.patch",
+    "image-size@1.2.1": "patches/image-size@1.2.1.patch"
+  }
 }

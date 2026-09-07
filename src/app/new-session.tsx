@@ -1,12 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { replaceWithSession, sessionList, type RootSessionNavigation } from '@/lib/session-routes';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text } from '@/components/ui/text';
-import { remoteClient as gateway } from '@/lib/remote-client';
-import { pickPreferredModel } from '@/lib/models';
+import { createSessionInWorkspace } from '@/lib/create-session';
 import { radius, spacing, type ThemeColors, useTheme, useThemeStyles } from '@/lib/theme';
 import { baseName } from '@/lib/util';
 import { useApp } from '@/store/app';
@@ -22,25 +21,24 @@ export default function NewSessionScreen() {
   const [ws, setWs] = useState(params.workspace ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const creationLock = useRef(false);
 
   const create = async () => {
+    if (creationLock.current) return;
     if (!ws) {
       setError('请选择工作区');
       return;
     }
+    creationLock.current = true;
     setBusy(true);
     setError('');
     try {
-      const createParams: Record<string, unknown> = { workspacePath: ws };
-      const defaultModel = pickPreferredModel(providers);
-      if (defaultModel) createParams.model = { providerId: defaultModel.providerId, modelId: defaultModel.modelId };
-      const r = await gateway.request<{ session?: { sessionId: string; title?: string } }>('gw.create', createParams);
-      const sid = r.session?.sessionId;
-      if (!sid) throw new Error('创建失败');
-      replaceWithSession(navigation, { id: sid, title: r.session?.title ?? '新会话', workspacePath: ws, returnTo: sessionList(params.returnTo) });
+      const target = await createSessionInWorkspace(ws, providers);
+      replaceWithSession(navigation, { ...target, returnTo: sessionList(params.returnTo) });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
+      creationLock.current = false;
       setBusy(false);
     }
   };

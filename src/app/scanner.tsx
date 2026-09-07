@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text } from '@/components/ui/text';
 import { spacing, type ThemeColors, useTheme, useThemeStyles } from '@/lib/theme';
 import { isOfficialRemoteUrl, pairFromOfficialUrl } from '@/lib/official-pairing';
